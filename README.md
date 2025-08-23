@@ -85,17 +85,6 @@ src/
 
 ---
 
-## 🔒 Secrets & Safety
-
-* Do **not** commit `.env.local`. Ensure it’s in `.gitignore`.
-* Add a shareable template for teammates:
-
-  ```bash
-  printf 'MONGODB_URI="<fill locally>"\n' > .env.example
-  ```
-
----
-
 ## 🗺️ Roadmap (next steps)
 
 * CSV Upload (drag-and-drop) → import real transactions
