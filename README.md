@@ -1,7 +1,3 @@
-Love it—you’re ready to upgrade that boilerplate. Here’s a **drop-in README.md** you can paste over your current one.
-
----
-
 # AI Finance Dashboard
 
 A full-stack **Next.js + TypeScript** app with **MongoDB (Mongoose)** that imports/creates transactions and visualizes them. Day 1 ships a clean **Transactions** table and a **seed endpoint** to load demo data.
@@ -124,19 +120,3 @@ npm run start   # start production server
 ## 📸 Screenshots
 
 *Add screenshots here (e.g., Transactions page).*
-
----
-
-## 📄 License
-
-MIT (or choose your preferred license)
-
----
-
-If you want, I can also generate the `.env.example` file content and a small screenshot block for you. After you paste this README, do:
-
-```bash
-git add README.md .env.example
-git commit -m "Docs: Replace boilerplate README with project overview"
-git push
-```
