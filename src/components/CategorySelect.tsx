@@ -2,13 +2,17 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-type Cat = { _id: string; name: string };
+type Option = { id: string; name: string };
 
 export function CategorySelect({
   txId,
   categories,
   value,
-}: { txId: string; categories: Cat[]; value?: string }) {
+}: {
+  txId: string;
+  categories: Option[]; // expects plain {id, name}
+  value?: string;
+}) {
   const [v, setV] = useState(value ?? "");
   const router = useRouter();
 
@@ -16,12 +20,14 @@ export function CategorySelect({
     const newId = e.target.value;
     setV(newId);
 
-    const body = newId ? { categoryId: newId } : { categoryId: null }; // <-- allow clear
+    // Send null to clear when “Uncategorized” is picked
+    const body = newId ? { categoryId: newId } : { categoryId: null };
     await fetch(`/api/transactions/${txId}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
     });
+
     router.refresh();
   }
 
@@ -33,7 +39,9 @@ export function CategorySelect({
     >
       <option value="">Uncategorized</option>
       {categories.map((c) => (
-        <option key={c._id} value={c._id}>{c.name}</option>
+        <option key={c.id} value={c.id}>
+          {c.name}
+        </option>
       ))}
     </select>
   );

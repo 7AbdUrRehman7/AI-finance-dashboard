@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { Transaction } from "@/models/Transaction";
+import CategoryPie from "@/components/charts/CategoryPie";
 
 const money = new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" });
 
@@ -36,16 +37,31 @@ export default async function Dashboard() {
 
   const month = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`;
   const net = byCategory.reduce((s: number, r: any) => s + r.total, 0);
+  const netClass = net < 0 ? "text-rose-600" : "text-emerald-600";
 
   return (
-    <main className="mx-auto max-w-3xl p-6 space-y-4">
-      <h1 className="text-2xl font-semibold">This Month ({month})</h1>
-
-      <section className="rounded-2xl border p-4">
-        <div className="text-sm text-gray-600">Net total</div>
-        <div className="text-2xl font-semibold">{money.format(net / 100)}</div>
+    <main className="mx-auto max-w-5xl p-6 space-y-6">
+      {/* Header card — matches /transactions */}
+      <section className="mb-6 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[1px] shadow-sm">
+        <div className="rounded-2xl bg-white px-6 py-5 dark:bg-neutral-950">
+          <h1 className="text-2xl font-semibold">This Month ({month})</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Overview of your categorized spending and income
+          </p>
+        </div>
       </section>
 
+      {/* Net total card — now with the same gradient outline */}
+      <section className="rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[1px] shadow-sm">
+        <div className="rounded-2xl bg-white px-6 py-5 dark:bg-neutral-950">
+          <div className="text-sm text-gray-600 dark:text-gray-400">Net total</div>
+          <div className={`text-3xl font-semibold ${netClass}`}>
+            {money.format(net / 100)}
+          </div>
+        </div>
+      </section>
+
+      {/* Category totals table */}
       <section className="overflow-hidden rounded-2xl border">
         <table className="w-full text-sm">
           <thead className="bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100">
@@ -58,7 +74,11 @@ export default async function Dashboard() {
             {byCategory.map((r: any) => (
               <tr key={r.category} className="border-t">
                 <td className="p-2">{r.category}</td>
-                <td className={`p-2 text-right font-mono tabular-nums ${r.total < 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                <td
+                  className={`p-2 text-right font-mono tabular-nums ${
+                    r.total < 0 ? "text-rose-600" : "text-emerald-600"
+                  }`}
+                >
                   {money.format(r.total / 100)}
                 </td>
               </tr>
@@ -72,6 +92,12 @@ export default async function Dashboard() {
             )}
           </tbody>
         </table>
+      </section>
+
+      {/* Category breakdown chart */}
+      <section className="rounded-2xl border p-4">
+        <h2 className="mb-3 text-lg font-semibold">Category Breakdown</h2>
+        <CategoryPie data={byCategory as any} />
       </section>
     </main>
   );

@@ -57,17 +57,25 @@ export default function ImportPage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl p-6 space-y-4">
-      <h1 className="text-2xl font-semibold">Import Transactions (CSV)</h1>
+    <main className="mx-auto max-w-3xl p-6 space-y-6">
+      {/* Header card — matches /transactions and /dashboard */}
+      <section className="mb-2 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[1px] shadow-sm">
+        <div className="rounded-2xl bg-white px-6 py-5 dark:bg-neutral-950">
+          <h1 className="text-2xl font-semibold">Import Transactions (CSV)</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Upload a CSV and we’ll normalize & insert it
+          </p>
+        </div>
+      </section>
 
-      <label className="block cursor-pointer rounded-xl border border-dashed p-6 text-center hover:bg-gray-50 dark:hover:bg-white/5">
+      <label className="block cursor-pointer rounded-2xl border border-dashed p-6 text-center hover:bg-gray-50 dark:hover:bg-white/5">
         <input
           type="file"
           accept=".csv"
           className="hidden"
           onChange={(e) => e.target.files && onFile(e.target.files[0])}
         />
-        <div className="text-sm text-gray-600 dark:text-gray-400">
+        <div className="text-base text-gray-600 dark:text-gray-300">
           Drop a CSV here or click to choose
         </div>
       </label>
@@ -75,7 +83,7 @@ export default function ImportPage() {
       {status && <div className="text-sm text-gray-600 dark:text-gray-400">{status}</div>}
 
       {rows.length > 0 && (
-        <>
+        <div className="flex items-center gap-3">
           <div className="text-sm text-gray-600">
             Previewing <strong>{rows.length}</strong> rows
           </div>
@@ -85,11 +93,12 @@ export default function ImportPage() {
           >
             Upload
           </button>
-        </>
+        </div>
       )}
 
       <div className="text-sm text-gray-500">
-        Expected columns: <code>Date</code>, <code>Description</code>, <code>Amount</code> (case-insensitive). Optional: <code>Merchant</code>.
+        Expected columns: <code>Date</code>, <code>Description</code>, <code>Amount</code> (case-insensitive).
+        Optional: <code>Merchant</code>.
       </div>
     </main>
   );
