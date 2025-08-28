@@ -1,79 +1,88 @@
 "use client";
+
+import * as React from "react";
 import {
+  ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
   Tooltip,
-  ResponsiveContainer,
   Legend,
 } from "recharts";
 
-type Slice = { category: string; total: number };
+type Row = { category: string; total: number };
 
-// Your exact mapping
-const CATEGORY_COLORS: Record<string, string> = {
-  "Food": "#FF6384",           // Bright Pink/Red
-  "Groceries": "#36A2EB",      // Bright Sky Blue
-  "Income": "#FFCE56",         // Bright Yellow
-  "Transport": "#4BC0C0",      // Teal / Cyan
-  "Uncategorized": "#9966FF",  // Vivid Purple
-  "Utilities": "#FF9F40",      // Bright Orange
-};
+const money = new Intl.NumberFormat("en-CA", {
+  style: "currency",
+  currency: "CAD",
+});
 
-// ---- Fallback color (for categories not in the mapping) ----
-function hashString(s: string) {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = Math.imul(31, h) + s.charCodeAt(i) | 0;
-  return Math.abs(h);
-}
-function hslToHex(h: number, s: number, l: number) {
-  s /= 100; l /= 100;
-  const k = (n: number) => (n + h/30) % 12;
-  const a = s * Math.min(l, 1 - l);
-  const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
-  const toHex = (x: number) => Math.round(255 * x).toString(16).padStart(2, "0");
-  return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
-}
-function fallbackColor(name: string) {
-  const hue = (hashString(name) * 137.508) % 360; // spread hues
-  return hslToHex(hue, 70, 50);
-}
+// A stable, high-contrast palette (works in light & dark)
+const PALETTE = [
+  "#6366F1", // indigo-500
+  "#22C55E", // emerald-500
+  "#EF4444", // red-500
+  "#F59E0B", // amber-500
+  "#06B6D4", // cyan-500
+  "#8B5CF6", // violet-500
+  "#10B981", // green-500
+  "#F97316", // orange-500
+  "#3B82F6", // blue-500
+  "#E11D48", // rose-600
+  "#84CC16", // lime-500
+  "#A855F7", // purple-500
+];
 
-function colorFor(name: string) {
-  return CATEGORY_COLORS[name] ?? fallbackColor(name);
-}
+export default function CategoryPie({
+  data,
+}: {
+  data: Row[] | undefined;
+}) {
+  // Normalize incoming rows into recharts-friendly shape
+  // We use absolute value so negative (expense) and positive (income) sizes are comparable.
+  const items =
+    (data ?? [])
+      .map((r) => ({
+        name: r?.category ?? "Uncategorized",
+        value: Math.abs(Number(r?.total) || 0),
+        raw: r,
+      }))
+      // If you want “spending only”, swap the filter to: .filter(r => (r.raw?.total ?? 0) < 0)
+      .filter((r) => r.value > 0) || [];
 
-export default function CategoryPie({ data }: { data: Slice[] }) {
-  const prepared = (data || [])
-    .filter((d) => d.total !== 0)
-    .map((d) => ({
-      name: d.category,
-      value: Math.abs(d.total / 100), // cents -> dollars
-    }));
-
-  if (prepared.length === 0) {
+  if (items.length === 0) {
     return (
-      <div className="p-10 text-center text-sm text-gray-500">
-        No data for this month yet.
+      <div className="flex h-64 items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+        No data for this period.
       </div>
     );
   }
 
   return (
-    <div className="w-full h-80">
+    <div className="h-80 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
-          <Pie data={prepared} dataKey="value" nameKey="name" innerRadius={60} outerRadius={100}>
-            {prepared.map((entry, i) => (
-              <Cell
-                key={i}
-                fill={colorFor(entry.name)}
-                stroke="rgba(255,255,255,0.15)"
-                strokeWidth={1}
-              />
+          <Pie
+            data={items}
+            dataKey="value"
+            nameKey="name"
+            innerRadius={70}
+            outerRadius={110}
+            paddingAngle={2}
+            isAnimationActive={false}
+          >
+            {items.map((_, i) => (
+              <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
             ))}
           </Pie>
-          <Tooltip formatter={(v: any) => `$${Number(v).toFixed(2)}`} />
+          <Tooltip
+            formatter={(val: any, _name: any, ctx: any) =>
+              [
+                money.format((Number(val) || 0) / 100),
+                ctx?.payload?.name ?? "Category",
+              ] as [string, string]
+            }
+          />
           <Legend />
         </PieChart>
       </ResponsiveContainer>

@@ -1,48 +1,52 @@
+import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { Transaction } from "@/models/Transaction";
 
-/** Parse ?month=YYYY-MM into a local [start, end) window */
-function parseMonth(url: string) {
-  const u = new URL(url);
-  const ym = u.searchParams.get("month") || new Date().toISOString().slice(0, 7);
-  if (!/^\d{4}-\d{2}$/.test(ym)) return null;
-  const [y, m] = ym.split("-").map(Number);
+type SummaryRow = {
+  category: string;
+  totalCents: number;
+};
+
+// Parse "YYYY-MM" -> [start, end)
+function monthWindow(ym?: string) {
+  const valid = /^\d{4}-\d{2}$/.test(ym ?? "");
+  const used = valid ? (ym as string) : new Date().toISOString().slice(0, 7);
+  const [y, m] = used.split("-").map(Number);
   const start = new Date(y, (m ?? 1) - 1, 1);
   const end = new Date(y, (m ?? 1), 1);
-  return { ym, start, end };
+  return { used, start, end };
 }
 
-function ymdLocal(d: Date) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+function csvEscape(s: string) {
+  // Wrap in quotes if needed; escape quotes by doubling them
+  const needs = /[",\n]/.test(s);
+  const escaped = s.replaceAll('"', '""');
+  return needs ? `"${escaped}"` : escaped;
 }
 
-function csvEscape(v: unknown): string {
-  const s = v == null ? "" : String(v);
-  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
+function toCsv(rows: SummaryRow[]) {
+  const header = "category,totalCents,total\n";
+  const lines = rows.map((r) =>
+    [csvEscape(r.category), String(r.totalCents), (r.totalCents / 100).toFixed(2)].join(",")
+  );
+  return header + lines.join("\n") + "\n";
 }
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   await db();
-  const parsed = parseMonth(req.url);
-  if (!parsed) {
-    return new Response(JSON.stringify({ error: "Bad month. Use YYYY-MM." }), {
-      status: 400,
-      headers: { "content-type": "application/json" },
-    });
-  }
-  const { ym, start, end } = parsed;
 
-  // Pull rows for the month with category names
-  const rows = await Transaction.aggregate([
+  const { searchParams } = new URL(req.url);
+  const month = searchParams.get("month") ?? undefined;
+  const { used, start, end } = monthWindow(month);
+
+  // Aggregate per-category totals for the month
+  const agg = await Transaction.aggregate([
     { $match: { postedAt: { $gte: start, $lt: end } } },
+    { $group: { _id: "$categoryId", totalCents: { $sum: "$amountCents" } } },
     {
       $lookup: {
         from: "categories",
-        localField: "categoryId",
+        localField: "_id",
         foreignField: "_id",
         as: "cat",
       },
@@ -50,39 +54,21 @@ export async function GET(req: Request) {
     {
       $project: {
         _id: 0,
-        postedAt: 1,
-        merchant: 1,
-        rawDesc: 1,
-        amountCents: 1,
         category: { $ifNull: [{ $first: "$cat.name" }, "Uncategorized"] },
+        totalCents: 1,
       },
     },
-    { $sort: { postedAt: 1 } },
+    { $sort: { totalCents: 1 } },
   ]);
 
-  // Build CSV
-  const header = ["date", "merchant", "description", "category", "amount", "amountCents"];
-  const lines = [header.join(",")];
-
-  for (const r of rows as any[]) {
-    const date = ymdLocal(new Date(r.postedAt));
-    const merchant = csvEscape(r.merchant ?? "");
-    const desc = csvEscape(r.rawDesc ?? "");
-    const category = csvEscape(r.category ?? "Uncategorized");
-    const amountCents = Number(r.amountCents) || 0;
-    const amount = (amountCents / 100).toFixed(2); // signed
-    lines.push([date, merchant, desc, category, amount, String(amountCents)].join(","));
-  }
-
-  // Add UTF-8 BOM for Excel friendliness
-  const csv = "\uFEFF" + lines.join("\r\n");
-  const filename = `transactions-${ym}.csv`;
+  // Type the final shape without using `any`
+  const rows = agg as unknown as SummaryRow[];
+  const csv = toCsv(rows);
 
   return new Response(csv, {
-    status: 200,
     headers: {
       "content-type": "text/csv; charset=utf-8",
-      "content-disposition": `attachment; filename="${filename}"`,
+      "content-disposition": `attachment; filename="summary-${used}.csv"`,
       "cache-control": "no-store",
     },
   });

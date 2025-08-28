@@ -1,145 +1,113 @@
 "use client";
-import { useRouter } from "next/navigation";
+
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
-type Option = { id: string; name: string };
-
-function toISO(d: Date) {
-  return d.toISOString().slice(0, 10);
-}
-
-export function AddTransactionButton({ categories }: { categories: Option[] }) {
+export default function AddTransactionButton() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [date, setDate] = useState(toISO(new Date()));
-  const [desc, setDesc] = useState("");
+  const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [merchant, setMerchant] = useState("");
-  const [amount, setAmount] = useState(""); // string; we'll parse on submit
-  const [category, setCategory] = useState<string>("");
-  const [loading, setLoading] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (loading) return;
-    setLoading(true);
+    if (saving) return;
+    setSaving(true);
     setMsg(null);
-
     try {
+      const n = parseFloat(amount);
+      if (Number.isNaN(n)) throw new Error("Invalid amount");
+      const amountCents = Math.round(n * 100);
       const res = await fetch("/api/transactions", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          postedAt: date,
-          description: desc || undefined,
-          merchant: merchant || undefined,
-          amount,               // can be "-12.34" or "$-12.34"
-          categoryId: category || undefined,
-        }),
+        body: JSON.stringify({ postedAt: date, merchant, amountCents }),
       });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json?.error || `HTTP ${res.status}`);
-      setMsg("Created ✓");
-      // reset minimal fields, keep date as convenience
-      setDesc("");
+      if (!res.ok) throw new Error("Create failed");
+      setMsg("Created");
+      setOpen(false);
       setMerchant("");
       setAmount("");
-      setCategory("");
       router.refresh();
-      setTimeout(() => setMsg(null), 2500);
-    } catch (err: any) {
-      setMsg(err?.message || "Failed");
+    } catch {
+      setMsg("Failed");
     } finally {
-      setLoading(false);
+      setSaving(false);
+      setTimeout(() => setMsg(null), 1500);
     }
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <>
       <button
-        onClick={() => setOpen((o) => !o)}
-        className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-white/10"
-        title="Create a single transaction"
+        type="button"
+        onClick={() => setOpen(true)}
+        className="rounded-xl border px-3 py-1.5 text-sm hover:bg-gray-50 dark:border-white/10 dark:hover:bg-white/10"
       >
-        {open ? "Close" : "Add Transaction"}
+        Add Transaction
       </button>
 
       {open && (
-        <form onSubmit={onSubmit}
-          className="mt-2 flex flex-wrap items-end gap-2 rounded-xl border px-3 py-2 dark:border-white/10"
-        >
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-600 dark:text-gray-300">Date</label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="rounded border px-2 py-1 text-sm dark:bg-neutral-900"
-              required
-            />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-[420px] rounded-2xl bg-white p-5 shadow-xl dark:bg-neutral-900">
+            <h3 className="mb-3 text-lg font-semibold">Add Transaction</h3>
+            <form onSubmit={onSubmit} className="space-y-3">
+              <label className="block text-sm">
+                <span className="mb-1 block">Date</span>
+                <input
+                  type="date"
+                  required
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full rounded border px-2 py-1 dark:border-white/10 dark:bg-neutral-800"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block">Merchant</span>
+                <input
+                  type="text"
+                  required
+                  value={merchant}
+                  onChange={(e) => setMerchant(e.target.value)}
+                  className="w-full rounded border px-2 py-1 dark:border-white/10 dark:bg-neutral-800"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block">Amount (e.g. -12.99)</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="w-full rounded border px-2 py-1 dark:border-white/10 dark:bg-neutral-800"
+                />
+              </label>
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="rounded-lg px-3 py-1.5 text-sm hover:bg-gray-100 dark:hover:bg-white/10"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="rounded-lg bg-gray-900 px-3 py-1.5 text-sm text-white disabled:opacity-60 dark:bg白 dark:text-black"
+                >
+                  {saving ? "Saving..." : "Save"}
+                </button>
+              </div>
+              {msg && <p className="pt-1 text-center text-xs text-gray-600 dark:text-gray-300">{msg}</p>}
+            </form>
           </div>
-
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-600 dark:text-gray-300">Description</label>
-            <input
-              type="text"
-              value={desc}
-              onChange={(e) => setDesc(e.target.value)}
-              placeholder="e.g., Coffee"
-              className="w-40 rounded border px-2 py-1 text-sm dark:bg-neutral-900"
-            />
-          </div>
-
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-600 dark:text-gray-300">Merchant (optional)</label>
-            <input
-              type="text"
-              value={merchant}
-              onChange={(e) => setMerchant(e.target.value)}
-              placeholder="e.g., Starbucks"
-              className="w-40 rounded border px-2 py-1 text-sm dark:bg-neutral-900"
-            />
-          </div>
-
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-600 dark:text-gray-300">Amount</label>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="-12.34 (expense) or 100.00 (income)"
-              className="w-52 rounded border px-2 py-1 text-sm dark:bg-neutral-900"
-              required
-            />
-          </div>
-
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-600 dark:text-gray-300">Category</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-40 rounded border px-2 py-1 text-sm dark:bg-neutral-900"
-            >
-              <option value="">Uncategorized</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded-lg bg-black px-4 py-2 text-white disabled:opacity-60 dark:bg-white dark:text-black"
-          >
-            {loading ? "Saving…" : "Save"}
-          </button>
-
-          {msg && <span className="text-sm text-gray-600 dark:text-gray-400">{msg}</span>}
-        </form>
+        </div>
       )}
-    </div>
+    </>
   );
 }
 

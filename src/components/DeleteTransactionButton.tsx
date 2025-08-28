@@ -1,26 +1,45 @@
 "use client";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export function DeleteTransactionButton({ id }: { id: string }) {
-  const [loading, setLoading] = useState(false);
+// Inline trash icon (keeps things dependency-free)
+function TrashIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M3 6h18" />
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+    </svg>
+  );
+}
+
+export default function DeleteTransactionButton({ id }: { id: string }) {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
   async function onDelete() {
     if (loading) return;
-    const ok = window.confirm("Delete this transaction? This cannot be undone.");
+    const ok = confirm("Delete this transaction?");
     if (!ok) return;
 
     setLoading(true);
     try {
-      const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json?.error || `HTTP ${res.status}`);
-      router.refresh(); // re-fetch server data so the row disappears
-    } catch (e) {
-      alert("Delete failed. Check console.");
-      // eslint-disable-next-line no-console
-      console.error(e);
+      await fetch(`/api/transactions/${id}`, { method: "DELETE" });
+      // notify others and refresh data
+      window.dispatchEvent(new Event("tx-updated"));
+      router.refresh();
     } finally {
       setLoading(false);
     }
@@ -28,23 +47,15 @@ export function DeleteTransactionButton({ id }: { id: string }) {
 
   return (
     <button
+      type="button"
       onClick={onDelete}
       disabled={loading}
-      title={loading ? "Deleting…" : "Delete"}
+      title={loading ? "Deleting..." : "Delete transaction"}
       aria-label="Delete transaction"
-      className="rounded-lg border px-2 py-1 text-xs hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-white/10 disabled:opacity-60"
+      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border text-gray-600 hover:bg-gray-50 hover:text-rose-600 disabled:opacity-60 dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-rose-400"
     >
-      {/* simple trash icon */}
-      <svg
-        width="14" height="14" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-        className="inline align-[-1px]"
-      >
-        <polyline points="3 6 5 6 21 6" />
-        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-        <path d="M10 11v6M14 11v6" />
-        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-      </svg>
+      <TrashIcon className="h-4 w-4" />
+      <span className="sr-only">Delete</span>
     </button>
   );
 }

@@ -1,79 +1,92 @@
+import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { Transaction } from "@/models/Transaction";
-import { Category } from "@/models/Category";
 
-function parseMonthParam(url: string) {
-  const u = new URL(url);
-  const ym = u.searchParams.get("month") || new Date().toISOString().slice(0, 7); // YYYY-MM
-  if (!/^\d{4}-\d{2}$/.test(ym)) return null;
-  const [y, m] = ym.split("-").map(Number);
-  const start = new Date(Date.UTC(y, (m ?? 1) - 1, 1));
-  const end = new Date(Date.UTC(y, (m ?? 1), 1));
-  return { ym, start, end };
+type Totals = {
+  incomeCents: number;
+  expenseCents: number; // negative number (sum of expenses)
+  netCents: number;     // income + expense
+};
+
+type ByCategoryRow = {
+  categoryId: string | null; // category id as string, or null for Uncategorized
+  category: string;
+  totalCents: number;        // can be positive or negative
+};
+
+// Parse "YYYY-MM" -> [start, end)
+function monthWindow(ym?: string) {
+  const valid = /^\d{4}-\d{2}$/.test(ym ?? "");
+  const used = valid ? (ym as string) : new Date().toISOString().slice(0, 7);
+  const [y, m] = used.split("-").map(Number);
+  const start = new Date(y, (m ?? 1) - 1, 1);
+  const end = new Date(y, (m ?? 1), 1);
+  return { used, start, end };
 }
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   await db();
 
-  const parsed = parseMonthParam(req.url);
-  if (!parsed) {
-    return new Response(JSON.stringify({ error: "Bad month. Use YYYY-MM." }), {
-      status: 400,
-      headers: { "content-type": "application/json" },
-    });
-  }
-  const { ym, start, end } = parsed;
+  const { searchParams } = new URL(req.url);
+  const month = searchParams.get("month") ?? undefined;
+  const { used, start, end } = monthWindow(month);
 
-  // Aggregate per category for the month
-  const perCat = await Transaction.aggregate([
+  // Overall totals for the month
+  const totalsAgg = await Transaction.aggregate([
     { $match: { postedAt: { $gte: start, $lt: end } } },
     {
       $group: {
-        _id: "$categoryId", // may be null
-        totalCents: { $sum: "$amountCents" },
+        _id: null,
+        incomeCents: {
+          $sum: { $cond: [{ $gt: ["$amountCents", 0] }, "$amountCents", 0] },
+        },
+        expenseCents: {
+          $sum: { $cond: [{ $lt: ["$amountCents", 0] }, "$amountCents", 0] },
+        },
+        netCents: { $sum: "$amountCents" },
       },
     },
-  ]).exec();
+    { $project: { _id: 0, incomeCents: 1, expenseCents: 1, netCents: 1 } },
+  ]);
 
-  // Map categoryId -> name
-  const catIds = perCat.map((r) => r._id).filter(Boolean);
-  const catDocs = await Category.find({ _id: { $in: catIds } })
-    .select({ _id: 1, name: 1 })
-    .lean();
+  const totals: Totals =
+    totalsAgg[0] ?? { incomeCents: 0, expenseCents: 0, netCents: 0 };
 
-  const nameById = new Map<string, string>(
-    catDocs.map((c: any) => [String(c._id), c.name as string]),
-  );
+  // Per-category totals for the month (project id as string to avoid ObjectId in JSON)
+  const catAgg = await Transaction.aggregate([
+    { $match: { postedAt: { $gte: start, $lt: end } } },
+    { $group: { _id: "$categoryId", totalCents: { $sum: "$amountCents" } } },
+    {
+      $lookup: {
+        from: "categories",
+        localField: "_id",
+        foreignField: "_id",
+        as: "cat",
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        categoryId: {
+          $cond: [
+            { $ifNull: ["$_id", false] },
+            { $toString: "$_id" },
+            null,
+          ],
+        },
+        category: { $ifNull: [{ $first: "$cat.name" }, "Uncategorized"] },
+        totalCents: 1,
+      },
+    },
+    { $sort: { totalCents: 1 } },
+  ]);
 
-  // Build response rows (include Uncategorized if _id is null)
-  const byCategory = perCat
-    .map((r: any) => {
-      const id = r._id ? String(r._id) : "";
-      const name = r._id ? nameById.get(id) ?? "Other" : "Uncategorized";
-      return { categoryId: id, name, totalCents: r.totalCents as number };
-    })
-    // optional: hide true zeros
-    .filter((r) => r.totalCents !== 0)
-    // sort biggest magnitude first
-    .sort((a, b) => Math.abs(b.totalCents) - Math.abs(a.totalCents));
+  const byCategory = catAgg as unknown as ByCategoryRow[];
 
-  const netCents = byCategory.reduce((s, r) => s + r.totalCents, 0);
-  const incomeCents = byCategory
-    .filter((r) => r.totalCents > 0)
-    .reduce((s, r) => s + r.totalCents, 0);
-  const expenseCents = byCategory
-    .filter((r) => r.totalCents < 0)
-    .reduce((s, r) => s + r.totalCents, 0);
-
-  return new Response(
-    JSON.stringify({
-      month: ym,
-      netCents,
-      incomeCents,
-      expenseCents,
-      byCategory,
-    }),
-    { status: 200, headers: { "content-type": "application/json" } },
-  );
+  return Response.json({
+    month: used,
+    totals,
+    byCategory,
+  });
 }
 
