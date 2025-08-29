@@ -1,5 +1,10 @@
 # AI Finance Dashboard (Full-Stack Next.js + TypeScript)
 
+Project Overview 
+
+AI Finance Dashboard is a full-stack Next.js + TypeScript app for personal finance. Import transactions, categorize them (manually, rule-based, or via an AI endpoint), set monthly budgets, and monitor spending with clean visuals and filterable exports. The dashboard highlights net totals, trends, category breakdowns, and auto-generated insights, while the Review tab makes fixing uncategorized items fast with bulk actions.
+Note: Fully dark-mode friendly out of the box.
+
 Personal finance web app to import transactions, categorize them (rules **and AI**), review uncategorized items in bulk, set **budgets** with progress/alerts, explore **insights** and charts, and **export** filtered results to CSV.
 
 > Built with **Next.js 15 (App Router)**, **TypeScript**, **MongoDB/Mongoose**, **Tailwind**, and lightweight charting. Optional LLM endpoints power AI categorization.
