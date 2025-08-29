@@ -53,17 +53,17 @@ Personal finance web app to import transactions, categorize them (rules **and AI
 
 <h3>Transactions</h3>
 <p align="center">
-  <img src="public/screenshots/transactions.png" width="900" alt="Transactions" />
+  <img src="public/screenshots/Transactions.png" width="900" alt="Transactions" />
 </p>
 
 <h3>Review</h3>
 <p align="center">
-  <img src="public/screenshots/review.png" width="900" alt="Review" />
+  <img src="public/screenshots/Review.png" width="900" alt="Review" />
 </p>
 
 <h3>Budgets</h3>
 <p align="center">
-  <img src="public/screenshots/budgets.png" width="900" alt="Budgets" />
+  <img src="public/screenshots/Budgets.png" width="900" alt="Budgets" />
 </p>
 
 ---
