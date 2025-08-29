@@ -248,25 +248,6 @@ Inspired by real-world fintech workflows. Thanks to open-source maintainers of N
 
 ---
 
-# .env.example
-
-```env
-# --- Server / DB ---
-MONGODB_URI=mongodb+srv://<user>:<pass>@<cluster>/<db>?retryWrites=true&w=majority
-
-# Optional: used by some internal URL builders (falls back to headers)
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-
-# --- AI (optional) ---
-# Enable AI categorization endpoints by providing a key.
-# OPENAI_API_KEY=sk-...
-
-# --- Node/Next ---
-# NODE_ENV=development
-```
-
----
-
 ## 🔭 Future Work (nice-to-haves)
 
 ### High-impact polish (1–2 days)
