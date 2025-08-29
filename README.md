@@ -40,9 +40,7 @@ Personal finance web app to import transactions, categorize them (rules **and AI
 
 ## 📸 Screenshots
 
-(Replace these with your own in `/public/screenshots` and update the paths.)
-
-* Dashboard: ![Dashboard](/public/screenshots/dashboard1.png)
+* Dashboard: ![Dashboard](/public/screenshots/dashboard1.png) (/public/screenshots/dashboard2.png)
 * Transactions: ![Transactions](/public/screenshots/Transactions.png)
 * Review: ![Review](/public/screenshots/Review.png)
 * Budgets: ![Budgets](/public/screenshots/Budgets.png)
