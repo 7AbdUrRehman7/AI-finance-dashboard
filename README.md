@@ -70,11 +70,11 @@ Personal finance web app to import transactions, categorize them (rules **and AI
 
 ## 🧱 Tech Stack
 
-* **Frontend/SSR**: Next.js 15 (App Router), React, TypeScript, TailwindCSS
-* **DB/ODM**: MongoDB Atlas, Mongoose
-* **Charts**: Recharts/lightweight components
-* **AI (optional)**: LLM endpoints for categorization
-* **Tooling**: Turbopack dev/build, Node 18+
+* **Frontend**: Next.js (App Router), TypeScript, TailwindCSS, Recharts
+* **Backend**: Next.js Route Handlers (Edge/Node)
+* **Database**: MongoDB with Mongoose
+* **AI**: LLM-assisted categorization & monthly insights
+* **Deploy target**: Vercel (planned) + MongoDB Atlas
 
 ---
 
