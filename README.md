@@ -212,12 +212,6 @@ Add a few high-value tests:
 
 ---
 
-## 📄 License
-
-MIT — feel free to use and adapt.
-
----
-
 ## 🙏 Acknowledgements
 
 Inspired by real-world fintech workflows. Thanks to open-source maintainers of Next.js, Tailwind, Mongoose, and charting libs.
