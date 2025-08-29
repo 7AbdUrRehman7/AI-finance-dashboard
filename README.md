@@ -253,8 +253,6 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 # --- Node/Next ---
 # NODE_ENV=development
 ```
----
-Here’s a drop-in **Future Work** section you can paste into your README:
 
 ---
 
