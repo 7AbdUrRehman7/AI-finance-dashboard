@@ -107,35 +107,69 @@ src/
 
 ---
 
+Absolutely—here’s a clean, copy-pasteable **Setup** you can drop into your README. I included cloning your repo, the exact terminal commands, and optional seed steps.
+
+---
+
 ## ⚙️ Setup
 
-### 1) Prereqs
+### 1) Clone the repo
 
-* Node.js **>= 18**
-* MongoDB Atlas connection string
+```bash
+# HTTPS
+git clone https://github.com/7AbdUrRehman7/finance-dashboard.git
+cd finance-dashboard
+```
 
-### 2) Environment
+> (If you prefer SSH: `git clone git@github.com:7AbdUrRehman7/finance-dashboard.git`)
 
-Create `.env.local` from the example below:
+### 2) Prereqs
+
+* Node.js **18+**
+* A MongoDB connection string (e.g., MongoDB Atlas)
+
+### 3) Environment
+
+Create `.env.local` and fill the required values:
 
 ```bash
 cp .env.example .env.local
 ```
 
-### 3) Install & Run
+**Required**
+
+* `MONGODB_URI` — your MongoDB connection string
+
+**Optional (if you want AI features)**
+
+* `OPENAI_API_KEY` — for AI categorization / insights
+
+### 4) Install & Run (Dev)
 
 ```bash
 npm install
-npm run dev        # http://localhost:3000
+npm run dev    # http://localhost:3000
 ```
 
-> If you see a Turbopack “workspace root” warning about multiple lockfiles, remove any extra `package-lock.json` outside the project folder, or set `turbopack.root` in `next.config.ts`.
+> If you see a Turbopack “workspace root” warning about multiple lockfiles, remove any extra `package-lock.json` outside this project folder, or set `turbopack.root` in `next.config.ts`.
 
-### 4) Initialize Data (optional)
+### 5) Initialize Data (optional but handy)
 
-* Seed default categories: `GET http://localhost:3000/api/setup/categories`
-* Seed sample data: `GET http://localhost:3000/api/seed`
-* Or import your own CSV at `/import` (see `samples/`).
+Open these in your browser (or curl) to seed data:
+
+* Seed default categories
+  `http://localhost:3000/api/setup/categories`
+* Seed sample data
+  `http://localhost:3000/api/seed`
+
+Or import your own CSV at `/import` (see `samples/` for format).
+
+### 6) Production build (optional)
+
+```bash
+npm run build
+npm start      # serves the production build
+```
 
 ---
 
