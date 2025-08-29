@@ -44,7 +44,6 @@ Personal finance web app to import transactions, categorize them (rules **and AI
 ---
 ## 📸 Screenshots
 
-<!-- Dashboard (3 stacked, same width) -->
 <h3>Dashboard</h3>
 <p align="center">
   <img src="public/screenshots/dashboard1.png" width="900" alt="Dashboard (top)" /><br/>
@@ -52,17 +51,21 @@ Personal finance web app to import transactions, categorize them (rules **and AI
   <img src="public/screenshots/dashboard3.png" width="900" alt="Dashboard (bottom)" />
 </p>
 
-<!-- Other tabs in a simple grid -->
-<h3>Transactions • Review • Budgets</h3>
-<table>
-  <tr>
-    <td align="center"><img src="public/screenshots/Transactions.png" width="420" alt="Transactions" /></td>
-    <td align="center"><img src="public/screenshots/Review.png" width="420" alt="Review" /></td>
-  </tr>
-  <tr>
-    <td colspan="2" align="center"><img src="public/screenshots/Budgets.png" width="420" alt="Budgets" /></td>
-  </tr>
-</table>
+<h3>Transactions</h3>
+<p align="center">
+  <img src="public/screenshots/transactions.png" width="900" alt="Transactions" />
+</p>
+
+<h3>Review</h3>
+<p align="center">
+  <img src="public/screenshots/review.png" width="900" alt="Review" />
+</p>
+
+<h3>Budgets</h3>
+<p align="center">
+  <img src="public/screenshots/budgets.png" width="900" alt="Budgets" />
+</p>
+
 ---
 
 ## 🧱 Tech Stack
