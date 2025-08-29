@@ -42,32 +42,6 @@ Personal finance web app to import transactions, categorize them (rules **and AI
 > Note: the **To** date filter is currently treated as an **exclusive** end (e.g., filtering `2025-08-01` → `2025-08-31` returns dates `< 2025-08-31`). Choose next day (e.g., `2025-09-01`) to include the last day.
 
 ---
-## 📸 Screenshots
-
-<h3>Dashboard</h3>
-<p align="center">
-  <img src="public/screenshots/dashboard1.png" width="900" alt="Dashboard (top)" /><br/>
-  <img src="public/screenshots/dashboard2.png" width="900" alt="Dashboard (middle)" /><br/>
-  <img src="public/screenshots/dashboard3.png" width="900" alt="Dashboard (bottom)" />
-</p>
-
-<h3>Transactions</h3>
-<p align="center">
-  <img src="public/screenshots/Transactions.png" width="900" alt="Transactions" />
-</p>
-
-<h3>Review</h3>
-<p align="center">
-  <img src="public/screenshots/Review.png" width="900" alt="Review" />
-</p>
-
-<h3>Budgets</h3>
-<p align="center">
-  <img src="public/screenshots/Budgets.png" width="900" alt="Budgets" />
-</p>
-
----
-
 ## 🧱 Tech Stack
 
 * **Frontend**: Next.js (App Router), TypeScript, TailwindCSS, Recharts
@@ -77,40 +51,6 @@ Personal finance web app to import transactions, categorize them (rules **and AI
 * **Deploy target**: Vercel (planned) + MongoDB Atlas
 
 ---
-
-## 🗂️ Project Structure (high-level)
-
-```
-src/
-  app/
-    dashboard/            # main analytics view
-    transactions/         # table + filters + export + pagination
-    review/               # review queue with selection and bulk apply
-    budgets/              # budgets CRUD + progress/usage
-    import/               # CSV importer
-    api/
-      transactions/
-        search/           # server-side filtering + pagination (JSON)
-        export/           # CSV export (respects filters)
-        [id]/             # per-transaction update (e.g., category)
-        uncat/count/
-      categorize/         # rules + AI preview/apply
-      review/             # bulk apply/reject/pending/populate
-      analytics/          # summary/timeseries/insights
-      budgets/            # GET/PUT/DELETE, /copy
-      setup/categories    # seed categories
-      seed                # optional sample seed
-  components/             # UI pieces (filters, tables, badges, charts)
-  lib/                    # db, budgets, date, suggest, etc.
-  models/                 # Mongoose models: Transaction, Category, Budget, Suggestion
-```
-
----
-
-Absolutely—here’s a clean, copy-pasteable **Setup** you can drop into your README. I included cloning your repo, the exact terminal commands, and optional seed steps.
-
----
-
 ## ⚙️ Setup
 
 ### 1) Clone the repo
@@ -171,6 +111,60 @@ npm run build
 npm start      # serves the production build
 ```
 
+---
+
+## 📸 Screenshots
+
+<h3>Dashboard</h3>
+<p align="center">
+  <img src="public/screenshots/dashboard1.png" width="900" alt="Dashboard (top)" /><br/>
+  <img src="public/screenshots/dashboard2.png" width="900" alt="Dashboard (middle)" /><br/>
+  <img src="public/screenshots/dashboard3.png" width="900" alt="Dashboard (bottom)" />
+</p>
+
+<h3>Transactions</h3>
+<p align="center">
+  <img src="public/screenshots/Transactions.png" width="900" alt="Transactions" />
+</p>
+
+<h3>Review</h3>
+<p align="center">
+  <img src="public/screenshots/Review.png" width="900" alt="Review" />
+</p>
+
+<h3>Budgets</h3>
+<p align="center">
+  <img src="public/screenshots/Budgets.png" width="900" alt="Budgets" />
+</p>
+
+---
+
+## 🗂️ Project Structure (high-level)
+
+```
+src/
+  app/
+    dashboard/            # main analytics view
+    transactions/         # table + filters + export + pagination
+    review/               # review queue with selection and bulk apply
+    budgets/              # budgets CRUD + progress/usage
+    import/               # CSV importer
+    api/
+      transactions/
+        search/           # server-side filtering + pagination (JSON)
+        export/           # CSV export (respects filters)
+        [id]/             # per-transaction update (e.g., category)
+        uncat/count/
+      categorize/         # rules + AI preview/apply
+      review/             # bulk apply/reject/pending/populate
+      analytics/          # summary/timeseries/insights
+      budgets/            # GET/PUT/DELETE, /copy
+      setup/categories    # seed categories
+      seed                # optional sample seed
+  components/             # UI pieces (filters, tables, badges, charts)
+  lib/                    # db, budgets, date, suggest, etc.
+  models/                 # Mongoose models: Transaction, Category, Budget, Suggestion
+```
 ---
 
 ## 🔐 Environment Variables
