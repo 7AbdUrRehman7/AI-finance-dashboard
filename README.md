@@ -45,12 +45,26 @@ Personal finance web app to import transactions, categorize them (rules **and AI
 
 ## 📸 Screenshots
 
-* Dashboard: ![Dashboard](/public/screenshots/dashboard1.png)
-             ![Dashboard (midle)](public/screenshots/dashboard2.png)
-             ![Dashboard (bottom)](public/screenshots/dashboard3.png)
-* Transactions: ![Transactions](/public/screenshots/Transactions.png)
-* Review: ![Review](/public/screenshots/Review.png)
-* Budgets: ![Budgets](/public/screenshots/Budgets.png)
+<!-- Dashboard (3 stacked, same width) -->
+<h3>Dashboard</h3>
+<p align="center">
+  <img src="public/screenshots/dashboard1.png" width="900" alt="Dashboard (top)" /><br/>
+  <img src="public/screenshots/dashboard2.png" width="900" alt="Dashboard (middle)" /><br/>
+  <img src="public/screenshots/dashboard3.png" width="900" alt="Dashboard (bottom)" />
+</p>
+
+<!-- Other tabs in a simple grid -->
+<h3>Transactions • Review • Budgets</h3>
+<table>
+  <tr>
+    <td align="center"><img src="public/screenshots/transactions.png" width="420" alt="Transactions" /></td>
+    <td align="center"><img src="public/screenshots/review.png" width="420" alt="Review" /></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><img src="public/screenshots/budgets.png" width="420" alt="Budgets" /></td>
+  </tr>
+</table>
+
 
 ---
 
