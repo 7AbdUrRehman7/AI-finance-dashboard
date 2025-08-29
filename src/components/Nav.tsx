@@ -17,7 +17,7 @@ export default function Nav() {
     <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/80 backdrop-blur dark:border-white/10 dark:bg-neutral-950/80">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         <Link href="/dashboard" className="text-base font-semibold tracking-tight">
-          Finance Dashboard
+          AI Finance Dashboard
         </Link>
 
         <nav className="flex items-center gap-2">
