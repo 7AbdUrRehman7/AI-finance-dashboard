@@ -1,3 +1,4 @@
+//src/app/transactions/page.tsx
 import Link from "next/link";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
@@ -29,7 +30,7 @@ export default async function TransactionsPage({
   const categories = await Category.find({}).sort({ name: 1 }).lean();
   const categoriesPlain = categories.map((c: any) => ({ _id: String(c._id), name: String(c.name) }));
 
-  // Build query string from current search params
+  // Build query string from current search params (this is the canonical, normalized set)
   const sp = await searchParams;
   const allowed = [
     "text",
@@ -77,6 +78,15 @@ export default async function TransactionsPage({
   baseQS.delete("limit");
   const baseQuery = baseQS.toString();
 
+  // Build the export URL from the SAME normalized qs (drop pagination so we export all rows)
+  const exportQS = new URLSearchParams(qs);
+  exportQS.delete("page");
+  exportQS.delete("limit");
+  const exportHref =
+    exportQS.toString().length > 0
+      ? `/api/transactions/export?${exportQS.toString()}`
+      : `/api/transactions/export`;
+
   return (
     <main className="mx-auto max-w-5xl p-6 space-y-4">
       {/* Header */}
@@ -114,7 +124,7 @@ export default async function TransactionsPage({
         </div>
       </section>
 
-      {/* Filters */}
+      {/* Filters (with filter-aware Export CSV inside) */}
       <TransactionsFilterBar
         categories={categoriesPlain}
         initial={{
@@ -126,6 +136,7 @@ export default async function TransactionsPage({
           max: sp.max,
           onlyUncategorized: sp.onlyUncategorized,
         }}
+        exportHref={exportHref}
       />
 
       {/* Table */}

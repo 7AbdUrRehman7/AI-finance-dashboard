@@ -8,8 +8,8 @@ type Init = {
   categoryId?: string;
   from?: string;
   to?: string;
-  min?: string;
-  max?: string;
+  min?: string; // dollars
+  max?: string; // dollars
   onlyUncategorized?: string;
 };
 
@@ -41,8 +41,8 @@ export default function TransactionsFilterBar({
     if (categoryId) q.set("categoryId", categoryId);
     if (from) q.set("from", from);
     if (to) q.set("to", to);
-    if (min) q.set("min", min);
-    if (max) q.set("max", max);
+    if (min) q.set("min", min); // dollars; server converts to cents
+    if (max) q.set("max", max); // dollars; server converts to cents
     if (onlyUncat) q.set("onlyUncategorized", "1");
     return q;
   }, [text, categoryId, from, to, min, max, onlyUncat]);
@@ -51,7 +51,7 @@ export default function TransactionsFilterBar({
     const q = new URLSearchParams(query);
     const sort = sp.get("sort");
     if (sort) q.set("sort", sort);
-    q.set("page", "1"); // reset to first page when applying new filters
+    q.set("page", "1");
     router.push(`/transactions?${q.toString()}`);
   }
 
@@ -75,7 +75,7 @@ export default function TransactionsFilterBar({
 
   return (
     <section className="rounded-2xl border p-4 dark:border-white/10">
-      {/* Row 1 — compact inputs with labels above */}
+      {/* Row 1 */}
       <div className="grid grid-cols-12 gap-3">
         <div className="col-span-4">
           <label className="mb-1 block text-xs text-gray-400">Search</label>
@@ -146,7 +146,7 @@ export default function TransactionsFilterBar({
         </div>
       </div>
 
-      {/* Row 2 — left: checkbox + Export; right: Reset + Apply */}
+      {/* Row 2 */}
       <div className="mt-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-2">

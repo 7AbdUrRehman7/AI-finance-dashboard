@@ -5,6 +5,7 @@ import CategoryPie from "@/components/charts/CategoryPie";
 import MonthFilter from "@/components/MonthFilter";
 import MonthlyTrend from "@/components/charts/MonthlyTrend";
 import Link from "next/link";
+import { headers } from "next/headers";
 
 const money = new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" });
 
@@ -142,6 +143,20 @@ export default async function Dashboard({
     });
   }
 
+  // ── Insights + Budget Alerts (fetch from API)
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? "http";
+  const base = `${proto}://${host}`;
+
+  const [insightsRes, alertsRes] = await Promise.all([
+    fetch(`${base}/api/analytics/insights?month=${encodeURIComponent(month)}`, { cache: "no-store" }),
+    fetch(`${base}/api/analytics/alerts?month=${encodeURIComponent(month)}`, { cache: "no-store" }),
+  ]);
+
+  const insights = insightsRes.ok ? await insightsRes.json() : null;
+  const alerts = alertsRes.ok ? await alertsRes.json() : null;
+
   return (
     <main className="mx-auto max-w-5xl p-6 space-y-6">
       {/* Header card */}
@@ -175,14 +190,14 @@ export default async function Dashboard({
         </div>
       </section>
 
-      {/* Budget vs Spend strip (headline + always-visible breakdown + amount) */}
+      {/* Budget vs Spend strip */}
       <section className="rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[1px] shadow-sm">
         <div className="rounded-2xl bg-white px-6 py-5 dark:bg-neutral-950">
           <div className="flex items-start justify-between">
             <div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Budget vs Spend</div>
               <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Budgeted {money.format(totalBudgetedLimit / 100)} — Spent{" "}
+                Budgeted {money.format(totalBudgetedLimit / 100)} <span className="text-gray-400">•</span> Spent{" "}
                 {money.format(totalBudgetedSpend / 100)}
               </div>
             </div>
@@ -199,13 +214,139 @@ export default async function Dashboard({
         </div>
       </section>
 
+      {/* Budget Alerts card (NEW) */}
+      {alerts && (alerts.overBudget?.length > 0 || alerts.nearing?.length > 0) && (
+        <section className="rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[1px] shadow-sm">
+          <div className="rounded-2xl bg-white px-6 py-5 dark:bg-neutral-950">
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Budget Alerts</h2>
+              <Link
+                href="/budgets"
+                className="text-sm text-indigo-600 underline-offset-2 hover:underline dark:text-indigo-400"
+              >
+                Manage budgets →
+              </Link>
+            </div>
+
+            <ul className="space-y-2 text-sm">
+              {alerts.overBudget?.map((r: any) => (
+                <li key={`over-${r.categoryId}`} className="flex items-center justify-between">
+                  <span className="text-gray-700 dark:text-gray-200">{r.category}</span>
+                  <span
+                    className="rounded-full bg-rose-50 px-2.5 py-0.5 font-medium text-rose-600 ring-1 ring-rose-200 dark:bg-rose-900/20 dark:text-rose-300 dark:ring-rose-500/30"
+                    title={`Spent ${money.format(r.spentCents / 100)} of ${money.format(r.limitCents / 100)}`}
+                  >
+                    Over by {money.format(r.overCents / 100)}
+                  </span>
+                </li>
+              ))}
+
+              {alerts.nearing?.map((r: any) => (
+                <li key={`near-${r.categoryId}`} className="flex items-center justify-between">
+                  <span className="text-gray-700 dark:text-gray-200">{r.category}</span>
+                  <span
+                    className="rounded-full bg-amber-50 px-2.5 py-0.5 font-medium text-amber-700 ring-1 ring-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:ring-amber-500/30"
+                    title={`Spent ${money.format(r.spentCents / 100)} of ${money.format(r.limitCents / 100)}`}
+                  >
+                    {r.pctUsed}% used
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
+
+      {/* Insights card */}
+      <section className="rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[1px] shadow-sm">
+        <div className="rounded-2xl bg-white px-6 py-5 dark:bg-neutral-950">
+          <div className="mb-2">
+            <h2 className="text-lg font-semibold">Insights</h2>
+          </div>
+
+          {!insights ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">No insights available.</p>
+          ) : (
+            <ul className="space-y-2 text-sm">
+              {/* Top spend */}
+              <li className="flex items-center justify-between">
+                <span className="text-gray-600 dark:text-gray-300">Top spend category</span>
+                <span className="font-medium">
+                  {insights.topCategory ? (
+                    <>
+                      <span>{insights.topCategory.category}</span>
+                      <span className="mx-2 text-gray-500">•</span>
+                      <span className="tabular-nums">
+                        {money.format(insights.topCategory.spentCents / 100)}
+                      </span>
+                    </>
+                  ) : (
+                    "—"
+                  )}
+                </span>
+              </li>
+
+              {/* Biggest change vs last month */}
+              <li className="flex items-center justify-between">
+                <span className="text-gray-600 dark:text-gray-300">Biggest change vs last month</span>
+                <span className="font-medium">
+                  {insights.deltaCategory ? (
+                    <>
+                      <span>{insights.deltaCategory.category}</span>
+                      <span className="mx-2 text-gray-500">•</span>
+                      <span
+                        className={`tabular-nums ${
+                          insights.deltaCategory.deltaCents > 0
+                            ? "text-emerald-600"
+                            : insights.deltaCategory.deltaCents < 0
+                            ? "text-rose-600"
+                            : ""
+                        }`}
+                      >
+                        {insights.deltaCategory.deltaCents >= 0 ? "+" : "−"}
+                        {money.format(Math.abs(insights.deltaCategory.deltaCents) / 100)}
+                      </span>
+                    </>
+                  ) : (
+                    "—"
+                  )}
+                </span>
+              </li>
+
+              {/* Spike day */}
+              <li className="flex items-center justify-between">
+                <span className="text-gray-600 dark:text-gray-300">Spike day</span>
+                <span
+                  className={`font-medium ${
+                    insights.spikeDay?.netCents < 0 ? "text-rose-600" : "text-emerald-600"
+                  }`}
+                  title="Largest absolute net day in the month"
+                >
+                  {insights.spikeDay ? (
+                    <>
+                      <span className="tabular-nums">{insights.spikeDay.date}</span>
+                      <span className="mx-2 text-gray-500">•</span>
+                      <span className="tabular-nums">
+                        {money.format(insights.spikeDay.netCents / 100)}
+                      </span>
+                    </>
+                  ) : (
+                    "—"
+                  )}
+                </span>
+              </li>
+            </ul>
+          )}
+        </div>
+      </section>
+
       {/* Income vs Expenses (Daily) */}
       <section className="rounded-2xl border p-4 dark:border-white/10">
         <h2 className="mb-3 text-lg font-semibold">Income vs Expenses (Daily)</h2>
         <MonthlyTrend data={points} />
       </section>
 
-      {/* Category totals table (with budget badges + hover tooltips) */}
+      {/* Category totals table */}
       <section className="overflow-hidden rounded-2xl border dark:border-white/10">
         <table className="w-full text-sm">
           <thead className="bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100">

@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { Transaction } from "@/models/Transaction";
 import { Category } from "@/models/Category"; // ensures model is registered
+import { Types } from "mongoose";
 
 function parseBool(v: string | null): boolean | undefined {
   if (v == null) return undefined;
@@ -25,16 +26,26 @@ function buildMatch(u: URL) {
     match.$or = [{ merchant: rx }, { rawDesc: rx }];
   }
 
+  // IMPORTANT: cast categoryId to ObjectId so it matches the stored type
   if (categoryId) {
-    match.categoryId = categoryId;
+    if (Types.ObjectId.isValid(categoryId)) {
+      match.categoryId = new Types.ObjectId(categoryId);
+    } else {
+      // invalid id => no results
+      match.categoryId = "__never__";
+    }
   } else if (onlyUncat) {
-    match.$or = [...(match.$or ?? []), { categoryId: { $exists: false } }, { categoryId: null }];
+    match.$or = [
+      ...(match.$or ?? []),
+      { categoryId: { $exists: false } },
+      { categoryId: null },
+    ];
   }
 
   if (from || to) {
     match.postedAt = {};
     if (from) match.postedAt.$gte = new Date(from);
-    if (to) match.postedAt.$lt = new Date(to);
+    if (to) match.postedAt.$lt = new Date(to); // end-exclusive, matches your search route style
   }
 
   if (min || max) {

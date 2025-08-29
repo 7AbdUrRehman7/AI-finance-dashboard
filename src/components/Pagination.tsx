@@ -8,22 +8,30 @@ type Props = {
   total: number;
   /** Query string of current filters WITHOUT page/limit (e.g. "text=foo&categoryId=123") */
   baseQuery: string;
+  /** Which route to page on (defaults to /transactions) */
+  basePath?: string;
 };
 
-function hrefWith(baseQuery: string, page: number, limit?: number) {
+function hrefWith(basePath: string, baseQuery: string, page: number, limit?: number) {
   const qs = new URLSearchParams(baseQuery);
   qs.set("page", String(page));
   if (limit) qs.set("limit", String(limit));
-  return `/transactions?${qs.toString()}`;
+  return `${basePath}?${qs.toString()}`;
 }
 
-export default function Pagination({ page, pageSize, total, baseQuery }: Props) {
+export default function Pagination({
+  page,
+  pageSize,
+  total,
+  baseQuery,
+  basePath = "/transactions",
+}: Props) {
   const maxPage = Math.max(1, Math.ceil(total / pageSize));
   const prevDisabled = page <= 1;
   const nextDisabled = page >= maxPage;
 
-  const prevHref = hrefWith(baseQuery, Math.max(1, page - 1), pageSize);
-  const nextHref = hrefWith(baseQuery, Math.min(maxPage, page + 1), pageSize);
+  const prevHref = hrefWith(basePath, baseQuery, Math.max(1, page - 1), pageSize);
+  const nextHref = hrefWith(basePath, baseQuery, Math.min(maxPage, page + 1), pageSize);
 
   return (
     <div className="flex items-center gap-2">
@@ -35,10 +43,10 @@ export default function Pagination({ page, pageSize, total, baseQuery }: Props) 
           onChange={(e) => {
             const n = Number(e.target.value);
             // When page size changes, reset to page 1
-            window.location.href = hrefWith(baseQuery, 1, n);
+            window.location.href = hrefWith(basePath, baseQuery, 1, n);
           }}
         >
-          {[10, 20, 50].map((n) => (
+          {[10, 20, 50, 100].map((n) => (
             <option key={n} value={n}>
               {n}
             </option>

@@ -1,4 +1,3 @@
-// src/app/api/transactions/search/route.ts
 import { db } from "@/lib/db";
 import { Transaction } from "@/models/Transaction";
 import { Category } from "@/models/Category";
@@ -12,13 +11,13 @@ type Query = {
   text?: string;
   categoryId?: string;
   from?: string; // YYYY-MM-DD
-  to?: string;   // YYYY-MM-DD (exclusive end if provided)
-  min?: string;  // amount in cents (stringified number)
-  max?: string;  // amount in cents
-  onlyUncategorized?: string; // "1" or "true"
+  to?: string;   // YYYY-MM-DD (inclusive in UI; server uses < next UTC day)
+  min?: string;  // amount in DOLLARS
+  max?: string;  // amount in DOLLARS
+  onlyUncategorized?: string; // "1" | "true"
   page?: string;   // 1-based
   limit?: string;  // page size
-  sort?: string;   // optional: "dateAsc" | "dateDesc" | "amountAsc" | "amountDesc"
+  sort?: "dateAsc" | "dateDesc" | "amountAsc" | "amountDesc";
 };
 
 type TxLean = {
@@ -30,7 +29,7 @@ type TxLean = {
   categoryId?: Types.ObjectId | null;
 };
 
-function isTrue(v: string | undefined): boolean {
+function isTrue(v?: string): boolean {
   if (!v) return false;
   const s = v.toLowerCase();
   return s === "1" || s === "true" || s === "yes";
@@ -42,10 +41,22 @@ function parseIntSafe(v?: string, fallback = 0): number | null {
   return Number.isFinite(n) ? Math.trunc(n) : fallback;
 }
 
-function parseISODate(v?: string): Date | null {
+function dollarsToCentsStr(v?: string): number | null {
+  if (v == null || v.trim() === "") return null;
+  const n = Number(v);
+  if (!Number.isFinite(n)) return null;
+  return Math.round(n * 100);
+}
+
+// Parse "YYYY-MM-DD" as a UTC midnight Date (no local timezone drift)
+function parseYmdToUtcDate(v?: string): Date | null {
   if (!v) return null;
-  const d = new Date(v);
-  return Number.isNaN(d.getTime()) ? null : d;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v.trim());
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]) - 1; // 0-based
+  const d = Number(m[3]);
+  return new Date(Date.UTC(y, mo, d, 0, 0, 0, 0));
 }
 
 function escapeRegExp(s: string): string {
@@ -68,44 +79,48 @@ export async function GET(req: Request) {
   const limit = Math.min(100, Math.max(1, parseIntSafe(q.limit, 20) ?? 20));
   const skip = (page - 1) * limit;
 
-  // build filter
-  const filter: FilterQuery<TxLean> = {};
+  // Build AND clauses so multiple conditions combine correctly
+  const and: FilterQuery<TxLean>[] = [];
 
-  // text search (regex fallback so index is optional; we will add a text index later)
+  // text search
   if (q.text && q.text.trim() !== "") {
     const needle = new RegExp(escapeRegExp(q.text.trim()), "i");
-    filter.$or = [{ merchant: needle }, { rawDesc: needle }];
+    and.push({ $or: [{ merchant: needle }, { rawDesc: needle }] });
   }
 
-  // category filter
+  // category / uncategorized
   const catOid = toObjectId(q.categoryId);
   if (catOid) {
-    filter.categoryId = catOid;
+    and.push({ categoryId: catOid });
+  } else if (isTrue(q.onlyUncategorized)) {
+    and.push({ $or: [{ categoryId: null }, { categoryId: { $exists: false } }] });
   }
 
-  // only uncategorized
-  if (isTrue(q.onlyUncategorized)) {
-    filter.$or = filter.$or || [];
-    filter.$or.push({ categoryId: null }, { categoryId: { $exists: false } });
+  // date range (TO inclusive -> < next UTC day)
+  const fromUTC = parseYmdToUtcDate(q.from);
+  const toUTC = parseYmdToUtcDate(q.to);
+  if (fromUTC || toUTC) {
+    const rng: any = {};
+    if (fromUTC) rng.$gte = fromUTC;
+    if (toUTC) {
+      const toExclusive = new Date(toUTC.getTime());
+      toExclusive.setUTCDate(toExclusive.getUTCDate() + 1);
+      rng.$lt = toExclusive;
+    }
+    and.push({ postedAt: rng });
   }
 
-  // date range
-  const from = parseISODate(q.from);
-  const to = parseISODate(q.to);
-  if (from || to) {
-    filter.postedAt = {} as any;
-    if (from) (filter.postedAt as any).$gte = from;
-    if (to) (filter.postedAt as any).$lt = to;
+  // amount range (dollars -> cents)
+  const minC = dollarsToCentsStr(q.min);
+  const maxC = dollarsToCentsStr(q.max);
+  if (minC != null || maxC != null) {
+    const rng: any = {};
+    if (minC != null) rng.$gte = minC;
+    if (maxC != null) rng.$lte = maxC;
+    and.push({ amountCents: rng });
   }
 
-  // amount range
-  const min = parseIntSafe(q.min);
-  const max = parseIntSafe(q.max);
-  if (min != null || max != null) {
-    filter.amountCents = {} as any;
-    if (min != null) (filter.amountCents as any).$gte = min!;
-    if (max != null) (filter.amountCents as any).$lte = max!;
-  }
+  const filter: FilterQuery<TxLean> = and.length ? { $and: and } : {};
 
   // sort
   let sort: Record<string, 1 | -1> = { postedAt: -1 };
@@ -130,20 +145,16 @@ export async function GET(req: Request) {
     Transaction.countDocuments(filter),
   ]);
 
-  // fetch category names for the page
+  // category names for page
   const idSet = new Set<string>();
-  for (const d of docs) {
-    if (d.categoryId) idSet.add(String(d.categoryId));
-  }
+  for (const d of docs) if (d.categoryId) idSet.add(String(d.categoryId));
   const catIds = Array.from(idSet).map((s) => new Types.ObjectId(s));
   const cats = catIds.length
     ? await Category.find({ _id: { $in: catIds } }, { name: 1 }).lean<{ _id: Types.ObjectId; name: string }[]>()
     : [];
-
   const nameById = new Map<string, string>();
   for (const c of cats) nameById.set(String(c._id), c.name);
 
-  // shape response (stringify ids and dates)
   const items = docs.map((d) => ({
     id: String(d._id),
     merchant: d.merchant ?? null,
@@ -154,11 +165,6 @@ export async function GET(req: Request) {
     category: d.categoryId ? nameById.get(String(d.categoryId)) ?? "Uncategorized" : "Uncategorized",
   }));
 
-  return Response.json({
-    page,
-    pageSize: limit,
-    total,
-    items,
-  });
+  return Response.json({ page, pageSize: limit, total, items });
 }
 

@@ -1,16 +1,10 @@
-// src/app/review/page.tsx
 import Link from "next/link";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { Category } from "@/models/Category";
-import { CategorySelect } from "@/components/CategorySelect";
-import DeleteTransactionButton from "@/components/DeleteTransactionButton";
+import ReviewTable from "@/components/ReviewTable";
 
 type SP = Record<string, string | undefined>;
-
-const money = new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" });
-const fmtDate = (d: string | Date) =>
-  new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "2-digit" });
 
 const allowed = [
   "text",
@@ -21,6 +15,7 @@ const allowed = [
   "max",
   "onlyUncategorized",
   "limit",
+  "page", // added so paging flows through to the API
 ] as const;
 
 export default async function ReviewPage({
@@ -32,18 +27,22 @@ export default async function ReviewPage({
 
   const sp = await searchParams;
 
-  // Categories (plain for selects)
+  // Categories (plain -> safe for client)
   const categories = await Category.find({}).sort({ name: 1 }).lean();
-  const categoriesPlain = categories.map((c: any) => ({ _id: String(c._id), name: String(c.name) }));
+  const categoriesPlain = categories.map((c: any) => ({
+    _id: String(c._id),
+    name: String(c.name),
+  }));
 
-  // Build query string for server fetch (defaults: uncategorized, limit 100)
+  // Build query string for server fetch (defaults: uncategorized, limit 10, page 1)
   const qs = new URLSearchParams();
   for (const k of allowed) {
     const v = sp?.[k];
     if (typeof v === "string" && v.length > 0) qs.set(k, v);
   }
   if (!qs.has("onlyUncategorized")) qs.set("onlyUncategorized", "1");
-  if (!qs.has("limit")) qs.set("limit", "100");
+  if (!qs.has("limit")) qs.set("limit", "10"); // match Transactions default
+  if (!qs.has("page")) qs.set("page", "1");
 
   // Absolute base URL (await headers() in Next 15)
   const h = await headers();
@@ -51,6 +50,7 @@ export default async function ReviewPage({
   const proto = h.get("x-forwarded-proto") ?? "http";
   const base = `${proto}://${host}`;
 
+  // Fetch items to review
   const res = await fetch(`${base}/api/transactions/search?${qs.toString()}`, {
     cache: "no-store",
   });
@@ -58,7 +58,6 @@ export default async function ReviewPage({
     const body = await res.text();
     throw new Error(`Search API failed (${res.status}): ${body}`);
   }
-
   const data: {
     page: number;
     pageSize: number;
@@ -70,16 +69,31 @@ export default async function ReviewPage({
       amountCents: number;
       postedAt: string;
       categoryId?: string | null;
+      category?: string | null;
     }>;
   } = await res.json();
 
-  const txns = data.items.map((t) => ({
+  // Compact, safe payload for the client table
+  const items = data.items.map((t) => ({
     id: String(t.id),
     merchant: t.merchant ?? t.rawDesc ?? "-",
     postedAt: t.postedAt,
     amountCents: Number(t.amountCents),
     categoryId: t.categoryId ? String(t.categoryId) : "",
+    category: t.category ?? "",
   }));
+
+  // Default to keeping uncategorized-first behavior enabled
+  const uncFirst = sp?.uncFirst === "0" ? false : true;
+
+  // Build baseQuery for Pagination (current filters WITHOUT page/limit)
+  const baseQS = new URLSearchParams(qs);
+  baseQS.delete("page");
+  baseQS.delete("limit");
+  const baseQuery = baseQS.toString();
+
+  const page = Number(sp.page ?? data.page ?? 1);
+  const pageSize = Number(sp.limit ?? data.pageSize ?? 10);
 
   return (
     <main className="mx-auto max-w-5xl p-6 space-y-4">
@@ -90,7 +104,7 @@ export default async function ReviewPage({
             <div>
               <h1 className="text-2xl font-semibold tracking-tight">Review</h1>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Quickly clean up uncategorized transactions.
+                Quickly clean up uncategorized transactions and apply bulk changes.
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -105,58 +119,17 @@ export default async function ReviewPage({
         </div>
       </section>
 
-      {/* Simple server-rendered table */}
-      <div className="overflow-hidden rounded-2xl border border-gray-200 shadow-sm dark:border-white/10">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100">
-            <tr>
-              <th className="p-3 text-left font-medium">Date</th>
-              <th className="p-3 text-left font-medium">Merchant</th>
-              <th className="p-3 text-left font-medium">Category</th>
-              <th className="p-3 text-right font-medium">Amount</th>
-              <th className="p-3 text-right font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {txns.length === 0 && (
-              <tr>
-                <td className="p-6 text-center text-gray-500 dark:text-gray-400" colSpan={5}>
-                  Nothing to review. 🎉
-                </td>
-              </tr>
-            )}
-            {txns.map((t) => {
-              const isIncome = t.amountCents > 0;
-              return (
-                <tr
-                  key={t.id}
-                  className="border-t border-gray-100 transition hover:bg-gray-50 dark:border-white/10 dark:hover:bg-white/5"
-                >
-                  <td className="p-3 whitespace-nowrap">{fmtDate(t.postedAt)}</td>
-                  <td className="p-3">{t.merchant}</td>
-                  <td className="p-3">
-                    <CategorySelect
-                      txId={t.id}
-                      categories={categoriesPlain as any}
-                      value={t.categoryId}
-                    />
-                  </td>
-                  <td
-                    className={`p-3 text-right font-mono tabular-nums ${
-                      isIncome ? "text-emerald-600" : "text-rose-600"
-                    }`}
-                  >
-                    {money.format(t.amountCents / 100)}
-                  </td>
-                  <td className="p-3 text-right">
-                    <DeleteTransactionButton txId={t.id} />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      {/* Client table with selection + bulk apply + pagination */}
+      <ReviewTable
+        initialItems={items}
+        categories={categoriesPlain}
+        uncFirstDefault={uncFirst}
+        page={page}
+        pageSize={pageSize}
+        total={data.total}
+        baseQuery={baseQuery}
+        basePath="/review"
+      />
     </main>
   );
 }
