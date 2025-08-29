@@ -47,3 +47,13 @@ src_backup_for_transactions_fix/
 
 # Local backups
 src_backup_for_transactions_fix/
+
+# Local env
+.env*
+.env.local
+
+
+# Local env
+.env*
+.env.local
+
