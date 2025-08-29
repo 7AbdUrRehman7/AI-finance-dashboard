@@ -242,23 +242,6 @@ Server-side filtered list (JSON).
 
 ---
 
-## ✅ What’s Complete vs Skipped
-
-* **Complete**: CSV import, transactions table + filters + pagination, rules/manual categorization, AI endpoints & UI actions, review queue + bulk apply + pagination, budgets CRUD + progress/alerts, dashboard charts & insights, filter-aware CSV export.
-* **Intentionally Skipped**: Goals + what-if slider, cron jobs/email alerts, extensive test suite, NextAuth, polished skeleton states for every page (some exist), 404/500 pages (basic ones may exist via App Router defaults).
-
----
-
-## 🧪 Tests (lightweight suggestion)
-
-Add a few high-value tests:
-
-* `transactions/search` date/amount filtering
-* `transactions/export` honoring filters
-* budget math (`Spent/Left/Over`, alert thresholds)
-
----
-
 ## 🙏 Acknowledgements
 
 Inspired by real-world fintech workflows. Thanks to open-source maintainers of Next.js, Tailwind, Mongoose, and charting libs.
