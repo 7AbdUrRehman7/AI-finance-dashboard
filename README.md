@@ -253,3 +253,73 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 # --- Node/Next ---
 # NODE_ENV=development
 ```
+---
+Here’s a drop-in **Future Work** section you can paste into your README:
+
+---
+
+## 🔭 Future Work (nice-to-haves)
+
+### High-impact polish (1–2 days)
+
+* **Auth (NextAuth – Email/Google)**
+
+  * Protect `/transactions`, `/review`, `/budgets`.
+  * Add `.env`: `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, and a Google OAuth client if desired.
+* **Input validation (Zod)**
+
+  * Validate all API query/body params (e.g., `/api/transactions/search`, `/api/transactions/export`).
+  * Reuse schemas in both server handlers and client forms.
+* **MongoDB indexes (perf)**
+
+  * In `Transaction` model:
+
+    ```ts
+    TransactionSchema.index({ postedAt: -1 });
+    TransactionSchema.index({ categoryId: 1, postedAt: -1 });
+    TransactionSchema.index({ amountCents: -1, postedAt: -1 });
+    TransactionSchema.index({ merchant: "text", rawDesc: "text" }); // optional
+    ```
+* **Insights depth**
+
+  * Add “top merchants”, “burn rate vs last month”, and “projected month-end” tiles.
+
+### Platform & reliability (3–5 days)
+
+* **Cron jobs (Vercel Cron)**
+
+  * Nightly rollup endpoint (`/api/cron/rollup`) to precompute insights.
+  * Weekly/monthly budget digest, sent as email (Resend/SendGrid) or in-app notifications.
+* **Testing**
+
+  * **Unit:** Vitest for utils and API handlers.
+  * **Integration/UI:** React Testing Library.
+  * **E2E:** Playwright basic flows (import → categorize → review → budgets).
+* **Errors & UX polish**
+
+  * Add loading skeletons, empty states, and friendly 404/500 pages.
+  * Hook Sentry (or similar) for error tracking.
+
+### Feature stretch goals
+
+* **Bank import integration** (Plaid or Salt Edge) to replace manual CSVs.
+* **Goals & what-if** (simple slider that shows months to goal at current burn).
+* **Accessibility & i18n**
+
+  * Keyboard nav for tables, ARIA roles/labels, and optional locale/date/number formatting.
+* **Export & sharing**
+
+  * Filter-aware PDF export for dashboard (server-rendered).
+* **AI enhancements**
+
+  * Show model confidence + “why this category?” explanation.
+  * Cache/combine prompts to cut latency/cost.
+
+### Deploy notes (when ready)
+
+* **Vercel** for web/API, **MongoDB Atlas** for DB (not Postgres).
+* Document all required env vars in `.env.example`.
+* Consider `dynamic = 'force-dynamic'` vs caching where appropriate.
+
+---
+
