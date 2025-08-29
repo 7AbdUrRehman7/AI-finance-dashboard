@@ -6,7 +6,7 @@ Personal finance web app to import transactions, categorize them (rules **and AI
 
 ---
 
-## ✨ Features (shipping now)
+## ✨ Features
 
 * **CSV Import**: Upload bank/credit card CSVs (sample included).
 * **Transactions Table**:
