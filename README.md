@@ -42,7 +42,6 @@ Personal finance web app to import transactions, categorize them (rules **and AI
 > Note: the **To** date filter is currently treated as an **exclusive** end (e.g., filtering `2025-08-01` → `2025-08-31` returns dates `< 2025-08-31`). Choose next day (e.g., `2025-09-01`) to include the last day.
 
 ---
-
 ## 📸 Screenshots
 
 <!-- Dashboard (3 stacked, same width) -->
@@ -64,8 +63,6 @@ Personal finance web app to import transactions, categorize them (rules **and AI
     <td colspan="2" align="center"><img src="public/screenshots/Budgets.png" width="420" alt="Budgets" /></td>
   </tr>
 </table>
-
-
 ---
 
 ## 🧱 Tech Stack
